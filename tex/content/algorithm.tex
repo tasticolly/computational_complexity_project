@@ -1,0 +1,116 @@
+\subsection{Алгоритм решения задачи и его анализ}
+
+Заметим, что \textsf{RPP}(G', w', R) сводится к (G, w, R), где G - полный граф, w - метрическая функция весов, то есть для любых трёх вершин $x$, $y$ и $z$ выполнено $w(x, z) \leq w(x, y) + w(y, z))$. \\Для этого: \\
+ \par1) Добавим ко всем ребрам графа $G'$ максимальный вес ребра в графе $w_{max}' = max_{x,y} w'(x, y)$. Тогда неравенство треугольника будет выполнено: $w(x, y) = w'(x, y) + w_{max}' \leq 2w_{max}' \leq 2w_{max}' + w'(x, z) + w'(z, y) = w(x, z) + w(z, y)$. Цикл минимальной стоимости при этом останется тем же. Предположим, решение $W$ не совпадает с $W'$, так как ко всем ребрам прибавилось одинаковое значение, это значит, что длина цикла $W'$ отличается от длины цикла $W$. Пусть $ m = |W'|, n =|W|$, $cost(A)$ - суммарная стоимость ребер из множества $A$ с функцией весов $w$, а $cost'(A)$ - с функцией весов $w'$. Предположим $m < n$, тогда 
+$cost'(W) = cost(W) - n \dotproduct w_{max}' < cost(W') - m \dotproduct w_{max}' = cost'(W')$, противоречие с тем, что W' - решение исходной задачи. В случае $m > n$ аналогично получим противоречие.\\
+\par2) Для пар вершин, между которыми ребро отсутствует, проводим ребро со стоимостью $\infty$. Тогда они не могут содержаться в решении, так как цикл не будут минимальным.
+
+\begin{lemma}
+Пусть $(G = (V, E), w, R)$ - задача \textsf{RPP}, $c > 1$ - число компенент связности в $G\langle R \rangle$, а $W$ - решение задачи. Тогда $W=R \sqcup T \sqcup M$, где  
+$T$ - множество из $ c - 1$ ребра такое, что  $G \left\langle R \sqcup T \right\rangle$ - связный, 
+$M$ - совершенное паросочетание на вершинах нечетной степени в $G \left\langle R \sqcup T \right\rangle$.
+
+\end{lemma}
+\paragraph{Доказательство.}
+Разобьем $W \setminus R$ на $T \sqcup M$ так, что $T$ - минимальное по включению множество рёбер, что $G \left\langle R \sqcup T \right\rangle$ - связный. Заметим, что размер множества равен $c - 1$, так как достаточно упорядочить компоненты связности и по очереди соединить.  
+Докажем, что $M$ - паросочетание. Пусть нет, тогда найдем два ребра $(u,v),(v,w) \in M$ и заменим их на одно ребро $(u, w)$, ответ не станет хуже по неравенству треугольника. Так как в $W$ нет вершин нечётной степени(так как это цикл), то $M$ - паросочетание на вершинах нечётных степеней из $G \left\langle R \sqcup T \right\rangle$.
+
+\paragraph{Доказательство Теоремы 1.}
+
+Будем перебирать всевозможные множества $T$ из леммы. Таких не более чем $n^{2c-2}$, так как для каждого из $c-1$ ребра выбираем по 2 вершины из соответствующих компонент связности, размер которых не превосходит n. Для каждого множества $T$ вычисляем совершенное паросочетание минимального веса $M$ в графе на нечётных вершинах в $G \left\langle R \sqcup T \right\rangle$ за время $O(n^3)$. Из всех перебранных $T$ и $M$ возвращаем решение $R \sqcup M \sqcup T$ минимальной стоимости.
+
+
+
+\begin{algorithm}
+\caption{Основная функция(Псевдокод)}\label{alg:cap}
+\begin{lstlisting}[language=Python]
+
+def main(graph, requiredSubgraph):
+    #Floyd algorithm to find 
+    #distance between every pair
+    vector<vector<int>> distances = graph.Floyd()
+    #degrees of vertices in a graph G<R> 
+    #constructed on edges from R.
+    vector<int> degrees = requiredSubgraph.GetDegrees(); 
+    int minimalCycleWeight = INF
+    vector<pair<int, int>> res(
+        requiredSubgraph.GetComponentsReference().size()
+    );
+    # index of connected component 
+    const int firstComponentIndex = 1; 
+
+    # trying to find best set T 
+    # and perfect matching M by brute force
+    chooseVariant(
+        requiredSubgraph.GetComponents(),#get connective components  
+        dist, 
+        firstComponentIndex, 
+        res, 
+        degrees, 
+        minimalCycleWeight
+    );
+
+    for ([u, v]: requiredSubgraph) {
+        minimalCycleWeight += dist[u][v];
+    }
+    return minimalCycleWeight
+\end{lstlisting}
+
+\end{algorithm}
+
+
+\begin{algorithm}
+\caption{Функция перебора вариантов(Псевдокод)}\label{alg:cap}
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\small)]
+def chooseVariant(
+    components
+    dist, 
+    firstComponentIndex, 
+    res, 
+    degrees, 
+    minimalCycleWeight
+):
+    if (firstComponentIndex == components.size()) {
+        int cur = 0;
+        for ([u, v]: res)
+            cur += gr[u][v];
+        #Kun's algorythm for min cost matching
+        cur += kun(gr, degrees); 
+        ans = std::min(ans, cur);
+        return;
+    }
+    for (int idx1 = 0; 
+        idx1 < components[firstComponentIndex].size(); ++idx1) {
+        for (int secondComponentIndex = 0; secondComponentIndex 
+            < firstComponentIndex; ++secondComponentIndex) {
+            for (int idx2 = 0; idx2 
+                < components[compopnentIdx2].size(); ++idx2) {
+
+                int u = components[firstComponentIndex][idx1];
+                int v = components[secondComponentIndex][idx2];
+
+                res[firstComponentIndex] = {u, v};
+
+                ++degrees[u];
+                ++degrees[v];
+
+                chooseVariant(
+                    components,
+                    gr,
+                    firstComponentIndex + 1, 
+                    res,
+                    degrees, 
+                    ans
+                );
+
+                --degrees[u];
+                --degrees[v];
+            }
+        }
+    }
+\end{lstlisting}
+\end{algorithm}
+
+
+\paragraph{Анализ работы}
+Для приведенного алгоритма 
